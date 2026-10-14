@@ -16,6 +16,7 @@ def generate_launch_description():
         DeclareLaunchArgument("goal_y", default_value="4.85"),
         Node(package="amr_edge_lab", executable="sim_world", output="screen"),
         Node(package="amr_edge_lab", executable="depth_projector", output="screen"),
+        Node(package="amr_edge_lab", executable="velocity_gate", output="screen"),
         Node(package="amr_edge_lab", executable="mission_manager", output="screen", parameters=[{
             "goal_x": LaunchConfiguration("goal_x"), "goal_y": LaunchConfiguration("goal_y"),
         }]),

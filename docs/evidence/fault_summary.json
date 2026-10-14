@@ -1,0 +1,14 @@
+{
+  "mode": "live_ros2_nav2_synthetic_fault_injection",
+  "depth_dropout_stop_latency_s": 0.4986,
+  "stationary_drift_m": 0.0,
+  "recovery_route": "SUCCEEDED",
+  "confirmed_cancellation_precedes_retry": true,
+  "operator_cancel": "CANCELED_no_auto_resume",
+  "waypoints_completed": 2,
+  "recovery_pauses": 1,
+  "additional_readiness_losses": 0,
+  "perception_ms_p50": 2.031,
+  "perception_ms_p95": 2.565,
+  "hardware": "x86_64 Docker / WSL; synthetic sensors"
+}

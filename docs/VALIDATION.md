@@ -1,22 +1,23 @@
-# Validation record
+# Validation record — version 0.2
 
-Validated on 2026-10-13 (America/New_York). These are development checks, not a hardware or production benchmark.
+Validated on 2026-10-14 in Windows 11 / Ubuntu 24.04 WSL2 / ROS 2 Humble Ubuntu 22.04 Docker, x86_64. No physical robot, Jetson or ZED was used.
 
-| Check | Result |
+| Check | Observed result |
 | --- | --- |
-| Python standard-library unit suite on Windows | 12 tests passed |
-| Offline scenarios | Normal and blocked succeeded; blocked replanned once; canceled and unreachable returned their expected terminal states |
-| ROS package build | `colcon build --symlink-install` succeeded inside ROS 2 Humble / Ubuntu 22.04 Docker |
-| Live sensor integration | Synthetic depth projected into nonempty PointCloud2 |
-| Live localization | AMCL provided the `map -> base_link` transform chain |
-| Live mission cancellation | Confirmed action terminal result `CANCELED` |
-| Full Nav2 route after cancellation | Destination `(6.85, 4.85)` m reached, action returned `SUCCEEDED` |
-| Recorded full-run trajectory | 7.707 m, including the initial cancellation check; one synthetic run, not a performance claim |
+| Portable + NumPy tests | 28 tests passed, including 20 seeded projection equivalence cases |
+| ROS package | colcon symlink build passed |
+| Live depth dropout | Moving robot's gate output became zero in 0.4986 s |
+| Stationary hold after cancellation | Recorded odometry drift 0.0 m |
+| Recovery route | Both waypoints completed, one confirmed-cancel pause, no extra readiness loss in final run |
+| Operator cancellation | Confirmed CANCELED and no automatic resubmission |
+| Live 64x24 perception pipeline | p50 2.031 ms, p95 2.565 ms including clustering in the depth callback; excludes transport |
+| 320x180 synthetic projection benchmark | Same stride 2 / voxel 0.08: portable median 50.374 ms, NumPy 13.494 ms, 574 output points |
+| Existing live navigation smoke check | Depth cloud, AMCL transform, cancellation and subsequent nearby goal passed before final NumPy optimization |
 
-Development environment: Windows host, Ubuntu 24.04 WSL2, Docker 29.1.2, x86_64 ROS 2 Humble container. No Jetson, ZED or physical robot was used.
+Raw measured results and journal are in `docs/evidence`. Timings are samples from these runs, not safety or device-performance guarantees. Benchmark timings exclude ROS transport and clustering; callback timings use the much smaller live synthetic image. They must not be compared as identical workloads.
 
-Representative evidence is in `docs/media/ros_run.json`, `docs/media/trajectory.csv` and `docs/media/ros_replay.html`. Fresh runs export untracked files under `artifacts/ros`.
+Two earlier fault-test attempts reached the destination but observed a second readiness loss. Instrumentation showed scan/depth/odometry all stale together. A host scheduling/transport stall is a plausible explanation, not a proven root cause. The harness now records additional losses and checks every retry follows the previous final result, within the existing pause budget. The final run had no additional loss. The system has not been presented as immune to scheduling stalls.
 
-A startup race found during validation was corrected: service/action discovery alone was insufficient; the mission client now waits for the navigator lifecycle state to be active. Tests also distinguish a cancel request from the eventual action result.
+`docs/media/ros_run.json`, trajectory and replay are historical version-0.1 full-route evidence from 2026-10-13: destination (6.85,4.85), result SUCCEEDED, recorded 7.707 m including the cancellation check. Current version-0.2 fault recovery is evidenced separately.
 
-GitHub Actions configuration is included; local validation does not imply that a future remote workflow has already passed.
+GitHub Actions runs the tests and fresh live scenarios for each push. Consult the workflow for the exact commit; this local record alone does not assert remote CI success.

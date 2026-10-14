@@ -1,5 +1,7 @@
 # 从能运行到能解释：ROS 2 项目学习路线
 
+当前主项目已升级。进阶设计、失败案例、性能对照和练习见 [ENGINEERING_CN.md](ENGINEERING_CN.md)。本页保留入门说明。
+
 ## 第一课：先看一次真正的输入、状态和输出
 
 进入仓库根目录，在 Windows 用 `python`，Ubuntu 用 `python3`：
@@ -74,13 +76,13 @@ Z = depth
 
 练习：用中心像素、右侧像素、下方像素分别算一个 2 米深度点；解释左右与上下符号。查看单元测试如何覆盖 NaN、Inf、0 和错误形状。
 
-这个固定变换只适合示例安装位置。真实相机装歪或平移时，应使用标定外参和 TF，不应继续硬编码此公式。
+固定变换是基础案例。当前 perception.py 已加入参数化 translation/RPY 外参，perception_numpy.py 提供向量化处理；真实安装仍要校准并确认 TF。
 
 ## 第六课：复现一个真实启动问题
 
 本项目第一次 ROS 集成测试遇到：action server 可以被发现，但 Nav2 的 lifecycle 节点还没激活，过早提交目标会被拒绝。
 
-修复在 `mission_node.py`：查询 `/bt_navigator/get_state`，确认 active 后才允许提交。
+修复在 `route_node.py`：查询 `/bt_navigator/get_state`，确认 active 后才允许提交。
 
 练习：解释“接口已注册”和“组件已经准备好处理请求”的区别。然后读 `Mission` 的状态转换，说明为什么取消请求不能立即写成 `CANCELED`。
 

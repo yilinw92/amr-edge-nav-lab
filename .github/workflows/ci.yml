@@ -10,7 +10,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+      - run: pip install 'numpy>=1.21,<3'
       - run: python -m unittest discover -s tests -v
+      - run: python tools/benchmark_perception.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: perception-benchmark
+          path: artifacts/perception_benchmark.json
   ros-integration:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -18,3 +24,9 @@ jobs:
       - uses: actions/checkout@v4
       - run: docker build -t amr-edge-nav-lab .
       - run: docker run --rm amr-edge-nav-lab bash /ws/src/amr-edge-nav-lab/tools/ros_check.sh
+      - run: docker run --rm -v "$PWD:/ws/src/amr-edge-nav-lab" amr-edge-nav-lab bash /ws/src/amr-edge-nav-lab/tools/ros_fault_check.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ros-fault-events-and-results
+          path: artifacts/ros/

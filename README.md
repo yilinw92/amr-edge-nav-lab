@@ -1,122 +1,102 @@
-# AMR Edge Navigation Lab
+# AMR Edge Navigation Lab — fault-aware ROS 2 navigation
 
-An independent robotics portfolio demonstrating **ROS 2 Humble, Nav2, AMCL, depth projection, and navigation action lifecycle management** with synthetic sensors. No robot hardware is required.
+An independent **ROS 2 Humble / Nav2** portfolio focused on a practical failure: a navigation action can remain active after perception stops updating. This project combines calibrated depth processing, a final software velocity gate, and a waypoint supervisor that waits for confirmed cancellation before retrying.
 
-![Navigation replay](docs/media/navigation.png)
+![Recorded warehouse navigation](docs/media/navigation.png)
 
-This is a new portfolio implementation prepared with AI assistance. It contains no GM code, maps, measurements, or production data. Jetson Orin NX and ZED are integration targets; this repository does **not** claim hardware deployment, hardware performance, or a trained VLA policy.
+The simulator and test data are synthetic. No GM source, maps or production measurements are included. Jetson Orin NX and ZED are hardware integration targets; this repository has been tested on x86 Docker/WSL, not those devices. No trained VLA model is claimed.
 
-## What runs
+## Original engineering contributions
 
-| Layer | Implemented behavior |
-| --- | --- |
-| Portable core | A* baseline, footprint inflation, no diagonal corner cutting, depth projection, mission-state rules |
-| ROS simulator | Differential-drive kinematics, odometry/TF, laser ray casting, synthetic depth images, a toggleable obstacle |
-| Perception | `32FC1` depth + CameraInfo to height-filtered PointCloud2; checks NaN, range, shape, row padding and byte order |
-| Navigation | Nav2 planner/controller/costmaps and AMCL map localization; local costmap consumes scan + projected depth |
-| Mission client | NavigateToPose goal, acceptance, distance feedback, timeout, cancellation and final result; lifecycle readiness check |
-| Evidence | Unit tests, live ROS integration check, JSON/CSV results and a self-contained HTML replay |
+| Layer | Implemented behavior | Verification |
+| --- | --- | --- |
+| Depth processing | Byte order/row-padding checks, timestamp and CameraInfo consistency, optical-to-body transform plus mount RPY/translation, height/range gates, voxel centroids, connected-bin clustering | Portable and vectorized implementations compared on 20 seeded random inputs |
+| Command arbitration | Scan/depth/odometry freshness, command and mission-heartbeat watchdogs, sampled swept-disc braking envelope, reverse-motion support | Stale data and nearby obstacles suppress both linear and angular commands |
+| Route supervisor | Waypoint queue, acceptance/feedback/result, monotonic goal tokens, confirmed cancellation, cooldown, bounded retry/pause budgets, operator-cancel precedence, latched transport fault | Race, rejection, timeout, late-callback and missing-result tests |
+| ROS integration | Synthetic differential drive, laser/depth/odometry/TF, AMCL and Nav2, sensor fault service, event/status topics | Live camera-dropout, two-waypoint recovery and operator-cancellation scenario |
+| Evidence | Event journal, safety trace, JSON results, offline A* baseline and recorded ROS trajectories | CI runs portable tests and actual ROS integration; uploads evidence |
 
-## Start without ROS — Windows, Linux or macOS
+Nav2 supplies planning, control, costmaps and AMCL. This project does not present the upstream navigation algorithms as original work.
 
-Use Python 3.10+ from this repository directory. No third-party packages are needed:
+## Run the core and benchmark
 
 ```bash
+python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
+python tools/benchmark_perception.py
 python -m amr_edge_lab.offline --scenario blocked --out artifacts/offline
 ```
 
-Open `artifacts/offline/replay.html` in a browser. Other scenarios are `normal`, `canceled` and `unreachable`.
+The portable tests and A* replay run without ROS. NumPy enables the vectorized processor and its differential test. The offline replay is explicitly a grid-planning baseline, **not a Nav2 execution**.
 
-**The offline replay uses the small A* baseline, not Nav2.** It is useful for learning and unit tests. The following Docker route runs actual ROS 2/Nav2 nodes.
-
-## Run ROS 2 / Nav2 in Ubuntu or WSL
-
-Docker must already be installed and running. The container uses Ubuntu 22.04 + ROS 2 Humble even if the host is Ubuntu 24.04:
+## Run actual ROS 2 / Nav2 — Ubuntu or WSL
 
 ```bash
 docker build -t amr-edge-nav-lab .
 docker run --rm --init -it --name amr-lab amr-edge-nav-lab
 ```
 
-In another terminal, submit a mission after Nav2 becomes active:
+From another terminal:
 
 ```bash
-docker exec amr-lab /portfolio-entrypoint.sh ros2 service call /mission/start std_srvs/srv/Trigger '{}'
-docker exec amr-lab /portfolio-entrypoint.sh ros2 topic echo /mission/status
+docker exec amr-lab /portfolio-entrypoint.sh ros2 service call /mission/start_route std_srvs/srv/Trigger '{}'
+docker exec amr-lab /portfolio-entrypoint.sh ros2 topic echo /mission/events
+docker exec amr-lab /portfolio-entrypoint.sh ros2 topic echo /safety/status
 ```
 
-Cancel a mission or add a synthetic obstacle:
+Default route: `(1.85,1.05)` then `(1.85,2.85)` metres. `/mission/start` still submits the configurable single goal, default `(6.85,4.85)`. Override the flat `waypoints` XY array on the mission manager for another route. Requests are accepted only with active Nav2 and fresh sensor-health telemetry.
+
+Inject a missing depth camera, then restore it:
 
 ```bash
+docker exec amr-lab /portfolio-entrypoint.sh ros2 service call /demo/depth_enabled std_srvs/srv/SetBool '{data: false}'
+docker exec amr-lab /portfolio-entrypoint.sh ros2 service call /demo/depth_enabled std_srvs/srv/SetBool '{data: true}'
 docker exec amr-lab /portfolio-entrypoint.sh ros2 service call /mission/cancel std_srvs/srv/Trigger '{}'
-docker exec amr-lab /portfolio-entrypoint.sh ros2 service call /demo/toggle_blocker std_srvs/srv/SetBool '{data: true}'
-docker exec amr-lab /portfolio-entrypoint.sh ros2 service call /demo/toggle_blocker std_srvs/srv/SetBool '{data: false}'
 ```
 
-The fixed blocker may or may not intersect the route chosen by the current planner. Inspect the path and costmaps instead of assuming every toggle must trigger a replan.
+Camera loss: gate outputs zero velocity → supervisor requests cancellation → final action result confirms settlement → route stays paused → healthy cooldown → same waypoint is resubmitted with a new token. Operator cancellation is terminal and never auto-resumes. Missing cancellation results latch `FAULT`; they do not authorize another goal.
 
-## Automated live integration check
-
-```bash
-docker run --rm --init amr-edge-nav-lab bash /ws/src/amr-edge-nav-lab/tools/ros_check.sh
-```
-
-For the full warehouse route with exported logs and replay on the host:
+## Reproduce the evidence
 
 ```bash
-docker run --rm --init \
-  -v "$PWD:/ws/src/amr-edge-nav-lab" \
+docker run --rm --init -v "$PWD:/ws/src/amr-edge-nav-lab" \
+  amr-edge-nav-lab bash /ws/src/amr-edge-nav-lab/tools/ros_fault_check.sh
+docker run --rm --init -v "$PWD:/ws/src/amr-edge-nav-lab" \
   amr-edge-nav-lab bash /ws/src/amr-edge-nav-lab/tools/ros_check.sh --full
 ```
 
-Inspect `artifacts/ros/smoke.json`, `trajectory.csv`, `launch.log` and `replay.html`. The check requires sensor data, `map -> base_link` TF, an active Nav2 navigator, a confirmed canceled action, and successful arrival at the next goal.
+Inspect `artifacts/ros/fault_summary.json`, `mission_events.jsonl`, `safety_trace.json`, `fault_launch.log`, and the navigation replay. The fault check requires the robot to be moving before disabling depth; measures time until a zero output; checks stationary hold; verifies terminal action events precede retry; completes two waypoints; then checks operator cancellation cannot resume. Host scheduling stalls can trigger additional safe pauses; these are counted, with a bounded recovery budget, rather than omitted from results.
 
-For a native **Ubuntu 22.04 / ROS 2 Humble** installation:
+Saved local evidence: [fault-injection result](docs/evidence/fault_summary.json), [mission journal](docs/evidence/mission_events.jsonl), [projection benchmark](docs/evidence/perception_benchmark.json). These are measurements of the stated synthetic setup, not industrial safety or Jetson latency guarantees.
 
-```bash
-mkdir -p ~/amr_ws/src
-git clone https://github.com/yilinw92/amr-edge-nav-lab.git ~/amr_ws/src/amr-edge-nav-lab
-cd ~/amr_ws
-source /opt/ros/humble/setup.bash
-rosdep install --from-paths src --ignore-src -r -y
-colcon build --symlink-install
-source install/setup.bash
-ros2 launch amr_edge_lab demo.launch.py
-```
-
-The bundled Nav2 configuration is for Humble; do not treat it as a drop-in Jazzy configuration.
-
-## Architecture
+## Dataflow
 
 ```mermaid
 flowchart LR
-  W[Synthetic world] --> O[Odometry and odom-to-base TF]
-  W --> L[LaserScan]
-  W --> D[Depth image and CameraInfo]
-  D --> P[Depth projector]
-  P --> C[Local costmap]
-  L --> C
-  L --> A[AMCL]
-  M[Static map] --> A
-  A --> T[map-to-odom TF]
-  C --> N[Nav2 planner and controller]
-  N --> V[cmd_vel]
+  W[Synthetic world] --> S[Laser / depth / odometry]
+  S --> P[Calibrated depth + voxel pipeline]
+  S --> A[AMCL and Nav2 costmaps]
+  P --> A
+  A --> N[Nav2 controller]
+  N --> C[cmd_vel]
+  C --> G[Velocity gate]
+  S --> G
+  P --> G
+  G --> V[cmd_vel_safe]
   V --> W
-  Q[Mission action client] --> N
-  N --> R[Feedback and terminal result]
+  G --> H[Health telemetry]
+  H --> Q[Waypoint supervisor]
+  Q --> N
+  Q --> G
+  Q --> E[Sequenced mission events]
 ```
 
-## Learning and evidence
+## Learning and scope
 
-- [Chinese first lesson and learning path](docs/LEARN_CN.md)
-- [Architecture, failure cases and interview questions](docs/INTERVIEW_CN.md)
-- [Jetson / ZED integration boundaries](docs/JETSON_ZED.md)
+- [Chinese engineering guide, exercises and interview explanation](docs/ENGINEERING_CN.md)
+- [Introductory lessons](docs/LEARN_CN.md)
+- [Jetson / ZED integration notes](docs/JETSON_ZED.md)
 - [Validation record](docs/VALIDATION.md)
 - [Upstream references and licenses](THIRD_PARTY.md)
 
-## Scope
-
-The simulator uses ideal odometry and simplified extruded-wall depth. It does not model slip, noise, camera optics, exposure, network failures, dynamics, or a safety controller. The planner/controller/AMCL come from Nav2; this project contributes the simulator, depth adapter, mission client, tests and evidence exports. A* and Nav2 are different execution paths. No learned policy or VLA model is included.
-
-Original project code is MIT licensed; the adapted Nav2 configuration retains its upstream license.
+The simulator uses ideal wheel odometry, simplified extruded-wall depth and a synthetic planar scan. The gate is a **software demonstration**, not certified protective hardware: it assumes a circular footprint, static observed obstacles and a configured deceleration; it samples a constant-twist swept path and cannot model all real braking dynamics, coverage gaps or moving objects. Physical deployment needs calibrated sensor TF, measured timing/braking limits and a controller watchdog. Current sensor calibration is supplied as parameters; live TF extrinsic lookup, a ZED driver and real visual odometry are future hardware work. Original code is MIT licensed; the adapted Nav2 configuration retains its upstream license.

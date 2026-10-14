@@ -1,0 +1,21 @@
+{"seq": 1, "t": 16.1242, "event": "ROUTE_STARTED", "route_id": 1, "waypoint": 0, "token": 0, "goals": [[1.85, 1.05], [1.85, 2.85]]}
+{"seq": 2, "t": 16.1719, "event": "GOAL_SENT", "route_id": 1, "waypoint": 0, "token": 1, "goal": [1.85, 1.05], "retry": 0}
+{"seq": 3, "t": 16.1762, "event": "GOAL_ACCEPTED", "route_id": 1, "waypoint": 0, "token": 1}
+{"seq": 4, "t": 16.7715, "event": "CANCEL_REQUESTED", "route_id": 1, "waypoint": 0, "token": 1, "reason": "sensor_stale"}
+{"seq": 5, "t": 16.7715, "event": "READINESS_AT_CANCEL", "route_id": 1, "waypoint": 0, "token": 1, "navigator_active": true, "health_age": 0.018040024999997684, "lifecycle_age": 0.6976149829999976, "safety": {"linear": 0.0, "angular": 0.0, "reason": "SENSOR_STALE", "sensor_healthy": false, "stale_sources": ["depth"], "source_age_s": {"scan": 0.0395, "depth": 0.5311, "odom": 0.0456}, "clearance_m": null}}
+{"seq": 6, "t": 16.7731, "event": "CANCEL_REPLY", "route_id": 1, "waypoint": 0, "token": 1, "accepted": true}
+{"seq": 7, "t": 16.7984, "event": "GOAL_RESULT", "route_id": 1, "waypoint": 0, "token": 1, "outcome": "canceled", "reason": "sensor_stale"}
+{"seq": 8, "t": 18.972, "event": "GOAL_SENT", "route_id": 1, "waypoint": 0, "token": 2, "goal": [1.85, 1.05], "retry": 0}
+{"seq": 9, "t": 18.9744, "event": "GOAL_ACCEPTED", "route_id": 1, "waypoint": 0, "token": 2}
+{"seq": 10, "t": 21.1454, "event": "GOAL_RESULT", "route_id": 1, "waypoint": 0, "token": 2, "outcome": "succeeded", "reason": null}
+{"seq": 11, "t": 22.2216, "event": "GOAL_SENT", "route_id": 1, "waypoint": 1, "token": 3, "goal": [1.85, 2.85], "retry": 0}
+{"seq": 12, "t": 22.2243, "event": "GOAL_ACCEPTED", "route_id": 1, "waypoint": 1, "token": 3}
+{"seq": 13, "t": 32.6852, "event": "GOAL_RESULT", "route_id": 1, "waypoint": 1, "token": 3, "outcome": "succeeded", "reason": null}
+{"seq": 14, "t": 32.6852, "event": "ROUTE_FINISHED", "route_id": 1, "waypoint": 2, "token": 3, "outcome": "SUCCEEDED"}
+{"seq": 15, "t": 32.7243, "event": "ROUTE_STARTED", "route_id": 2, "waypoint": 0, "token": 3, "goals": [[1.85, 1.05], [1.85, 2.85]]}
+{"seq": 16, "t": 32.7717, "event": "GOAL_SENT", "route_id": 2, "waypoint": 0, "token": 4, "goal": [1.85, 1.05], "retry": 0}
+{"seq": 17, "t": 32.7739, "event": "GOAL_ACCEPTED", "route_id": 2, "waypoint": 0, "token": 4}
+{"seq": 18, "t": 32.8234, "event": "CANCEL_REQUESTED", "route_id": 2, "waypoint": 0, "token": 4, "reason": "operator"}
+{"seq": 19, "t": 32.8739, "event": "CANCEL_REPLY", "route_id": 2, "waypoint": 0, "token": 4, "accepted": true}
+{"seq": 20, "t": 32.8967, "event": "GOAL_RESULT", "route_id": 2, "waypoint": 0, "token": 4, "outcome": "canceled", "reason": "operator"}
+{"seq": 21, "t": 32.8967, "event": "ROUTE_FINISHED", "route_id": 2, "waypoint": 0, "token": 4, "outcome": "CANCELED"}

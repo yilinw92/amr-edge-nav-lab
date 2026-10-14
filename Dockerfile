@@ -2,7 +2,7 @@ FROM ros:humble-ros-base-jammy
 SHELL ["/bin/bash", "-c"]
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-navigation2 ros-humble-nav2-bringup \
-    python3-colcon-common-extensions && rm -rf /var/lib/apt/lists/*
+    python3-colcon-common-extensions python3-numpy && rm -rf /var/lib/apt/lists/*
 WORKDIR /ws/src/amr-edge-nav-lab
 COPY . .
 WORKDIR /ws

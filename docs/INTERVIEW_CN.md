@@ -1,5 +1,7 @@
 # ROS 2 项目：面试讲解与能力证据
 
+当前主项目已升级。进阶设计、失败案例、性能对照和练习见 [ENGINEERING_CN.md](ENGINEERING_CN.md)。本页保留入门说明。
+
 ## 60 秒介绍
 
 > I built an independent AMR navigation lab using ROS 2 and Nav2. It runs without robot hardware by simulating differential-drive motion, laser scans, and depth images. My code connects the sensor data to obstacle perception and manages navigation goals, feedback, cancellation, and final results. I separated the reusable planning and mission rules from the ROS adapters so I could test them independently. One integration issue I fixed was submitting a goal before the Nav2 lifecycle node became active. The project includes repeatable checks and exported trajectories, rather than only a successful screenshot.
@@ -10,11 +12,11 @@
 
 | 能力 | 证据入口 | 应能解释的问题 |
 | --- | --- | --- |
-| ROS 2 节点和数据接口 | `sim_world.py`、`depth_projector.py` | 为什么传感器使用 sensor-data QoS？ |
+| ROS 2 节点和数据接口 | `sim_world.py`、`depth_node.py` | 为什么传感器使用 sensor-data QoS？ |
 | 地图、定位和 TF | `config/nav2.yaml`、`launch/demo.launch.py` | map、odom、base_link 各自负责什么？ |
 | 深度感知 | `core.py: project_depth` | 深度单位、无效值、内参和外参分别是什么？ |
 | Nav2 与代价地图 | `config/nav2.yaml` | 二值地图、膨胀代价、机器人外形有何区别？ |
-| 任务 action 与生命周期 | `mission_node.py` | 已发现服务为何还可能不能导航？取消何时算完成？ |
+| 任务 action 与生命周期 | `route_node.py` | 已发现服务为何还可能不能导航？取消何时算完成？ |
 | 排障和验证 | `tests/ros_smoke.py` | 如何证明最终状态，而不是只看请求成功？ |
 | Docker 工程化 | `Dockerfile` | Ubuntu 主机版本和容器 ROS 发行版有什么关系？ |
 

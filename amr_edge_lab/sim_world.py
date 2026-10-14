@@ -23,14 +23,16 @@ class SimWorld(Node):
         self.v, self.w = 0.0, 0.0
         self.last_command = self.get_clock().now()
         self.blocker = False
+        self.depth_enabled = True
         self.blocked_cells = [(x, y) for x in range(36, 43) for y in range(25, 33)]
         self.odom_pub = self.create_publisher(Odometry, "odom", 10)
         self.scan_pub = self.create_publisher(LaserScan, "scan", qos_profile_sensor_data)
         self.depth_pub = self.create_publisher(Image, "camera/depth/image_raw", qos_profile_sensor_data)
         self.info_pub = self.create_publisher(CameraInfo, "camera/depth/camera_info", qos_profile_sensor_data)
         self.tf = TransformBroadcaster(self)
-        self.create_subscription(Twist, "cmd_vel", self.command, 10)
+        self.create_subscription(Twist, "cmd_vel_safe", self.command, 10)
         self.create_service(SetBool, "demo/toggle_blocker", self.toggle)
+        self.create_service(SetBool, "demo/depth_enabled", self.set_depth)
         self.create_timer(0.05, self.tick)
         self.sensor_ticks = 0
         self.get_logger().info("Synthetic simulator: ideal wheel odometry; AMCL receives map + laser scan.")
@@ -78,6 +80,8 @@ class SimWorld(Node):
         scan.range_min, scan.range_max, scan.scan_time = 0.05, 5.0, 0.1
         scan.ranges = [raycast(self.grid, self.x, self.y, self.yaw + scan.angle_min + i*scan.angle_increment, extra=obstacles) for i in range(181)]
         self.scan_pub.publish(scan)
+        if not self.depth_enabled:
+            return
         width, height, fx = 64, 24, 32.0
         # Simplified extruded-wall depth. Pinhole Z = planar ray range * cos(angle).
         row = []
@@ -93,6 +97,11 @@ class SimWorld(Node):
         info.k = [fx, 0.0, 31.5, 0.0, fx, 11.5, 0.0, 0.0, 1.0]
         self.info_pub.publish(info)
         self.depth_pub.publish(image)
+
+    def set_depth(self, request, response):
+        self.depth_enabled=request.data
+        response.success,response.message=True,f"depth_enabled={self.depth_enabled}"
+        return response
 
 
 def main(args=None):

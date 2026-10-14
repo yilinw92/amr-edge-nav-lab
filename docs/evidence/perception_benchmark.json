@@ -1,0 +1,44 @@
+{
+  "environment": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.14",
+  "input": "synthetic 320x180 depth plane; x86 CPU only",
+  "includes": "projection, height gate, voxel centroids; excludes ROS transport and clustering",
+  "configurations": [
+    {
+      "backend": "python",
+      "stride": 2,
+      "voxel_m": 0.08,
+      "output_points": 574,
+      "sampled_pixels": 14400,
+      "median_ms": 50.374,
+      "max_of_5_ms": 55.252
+    },
+    {
+      "backend": "numpy",
+      "stride": 1,
+      "voxel_m": 0.04,
+      "output_points": 2348,
+      "sampled_pixels": 57600,
+      "median_ms": 46.855,
+      "max_of_5_ms": 55.272
+    },
+    {
+      "backend": "numpy",
+      "stride": 2,
+      "voxel_m": 0.08,
+      "output_points": 574,
+      "sampled_pixels": 14400,
+      "median_ms": 13.494,
+      "max_of_5_ms": 15.21
+    },
+    {
+      "backend": "numpy",
+      "stride": 4,
+      "voxel_m": 0.08,
+      "output_points": 571,
+      "sampled_pixels": 3600,
+      "median_ms": 5.657,
+      "max_of_5_ms": 6.873
+    }
+  ]
+}

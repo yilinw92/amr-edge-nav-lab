@@ -8,8 +8,9 @@ This repository is validated with synthetic sensors on x86_64. No Jetson or ZED 
 2. Replace `sim_world` with the actual base driver, wheel odometry and sensors.
 3. Use the official [Stereolabs ROS 2 wrapper](https://github.com/stereolabs/zed-ros2-wrapper) for ZED data. Verify actual topic names, frames, units and QoS from the running driver.
 4. Either feed an appropriate registered depth image plus CameraInfo into an adapted projector, or feed the wrapper's point cloud directly into the Nav2 obstacle layer.
-5. Replace the fixed level-camera projection assumption with calibrated TF extrinsics. Never assign `base_link` to optical-frame points without transforming them.
-6. Confirm the base's command interface and independent stopping behavior before any motion.
+5. Supply calibrated translation/RPY parameters or implement timestamped TF extrinsic lookup. The adapter does not dynamically read TF extrinsics. Never relabel untransformed optical points as `base_link`.
+6. Wire the base to `/cmd_vel_safe`, confirm its independent command watchdog, and measure real timing/braking limits.
+7. The example scan is synthetic. A camera-only robot needs a separately validated localization plan; this demo does not implement ZED visual odometry or treat the camera as a laser scanner.
 
 ## Container boundary
 
