@@ -1,0 +1,13 @@
+{
+  "mode": "ros2_nav2_kinematic_simulation",
+  "depth_cloud": true,
+  "amcl_map_to_base_tf": true,
+  "mission_cancel_result": "CANCELED",
+  "goal_result": "SUCCEEDED",
+  "destination_m": [
+    6.85,
+    4.85
+  ],
+  "hardware": "synthetic x86_64 ROS 2 Humble simulation",
+  "recorded_path_length_m": 7.707
+}
